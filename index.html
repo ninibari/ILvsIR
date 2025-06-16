@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="he">
 <head>
@@ -62,10 +61,210 @@
 <canvas id="game" width="800" height="400" style="display:none;"></canvas>
 
 <script>
-// Placeholder for the full JavaScript (was in previous message)
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let playerCountry = "israel";
+let enemyCountry = "iran";
+
 document.getElementById("startButton").onclick = () => {
-  alert("כאן יופעל המשחק המלא עם כל הקוד שהזנת");
+  playerCountry = document.getElementById("playerCountry").value;
+  enemyCountry = document.getElementById("enemyCountry").value;
+  document.getElementById("startScreen").style.display = "none";
+  canvas.style.display = "block";
+  startGame();
 };
+
+function loadImage(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => resolve(img);
+  });
+}
+
+function startGame() {
+  Promise.all([
+    loadImage("img/background.jpg"),
+    loadImage("img/soldier.png"),
+    loadImage("img/robot.png"),
+    loadImage("img/flags/" + playerCountry + ".png"),
+    loadImage("img/flags/" + enemyCountry + ".png")
+  ]).then(([imgBackground, imgSoldier, imgRobot, flagPlayer, flagEnemy]) => {
+    const groundY = 190;
+    const gravity = 0.5;
+    let keys = {};
+    let bullets = [];
+    let robots = [];
+    let robotBullets = [];
+    let kills = 0;
+    let level = 1;
+
+    let player = {
+      x: 50,
+      y: groundY,
+      width: 110,
+      height: 110,
+      velocityY: 0,
+      isJumping: false,
+      isCrouching: false,
+      normalHeight: 110,
+      crouchHeight: 65,
+      health: 3
+    };
+
+    document.addEventListener("keydown", e => keys[e.key] = true);
+    document.addEventListener("keyup", e => keys[e.key] = false);
+
+    canvas.addEventListener("click", () => {
+      bullets.push({
+        x: player.x + player.width,
+        y: player.y + player.height / 2,
+        speed: 7
+      });
+    });
+
+    function spawnRobot() {
+      robots.push({
+        x: 800,
+        y: groundY,
+        width: 110,
+        height: 110,
+        speed: 2,
+        shootTimer: 0,
+        hitsToDie: (level === 1) ? 1 : 2
+      });
+    }
+
+    function updatePlayer() {
+      if (keys["ArrowRight"]) player.x += 5;
+      if (keys["ArrowLeft"]) player.x -= 5;
+      if (keys["ArrowUp"] && !player.isJumping && !player.isCrouching) {
+        player.velocityY = -10;
+        player.isJumping = true;
+      }
+      if (keys["ArrowDown"] && !player.isJumping) {
+        player.height = player.crouchHeight;
+        player.isCrouching = true;
+      } else if (!keys["ArrowDown"] && player.isCrouching) {
+        player.height = player.normalHeight;
+        player.isCrouching = false;
+      }
+
+      player.velocityY += gravity;
+      player.y += player.velocityY;
+      if (player.y >= groundY) {
+        player.y = groundY;
+        player.velocityY = 0;
+        player.isJumping = false;
+      }
+    }
+
+    function updateRobots() {
+      robots.forEach(robot => {
+        robot.x -= robot.speed;
+        robot.shootTimer++;
+        if (robot.shootTimer > 100) {
+          robotBullets.push({
+            x: robot.x,
+            y: robot.y + robot.height / 2,
+            speed: 5
+          });
+          robot.shootTimer = 0;
+        }
+      });
+    }
+
+    function checkPlayerHit() {
+      robotBullets.forEach((b, i) => {
+        if (
+          b.x < player.x + player.width &&
+          b.x + 5 > player.x &&
+          b.y < player.y + player.height &&
+          b.y + 5 > player.y
+        ) {
+          robotBullets.splice(i, 1);
+          player.health -= 1;
+        }
+      });
+    }
+
+    function update() {
+      updatePlayer();
+      updateRobots();
+      bullets.forEach(b => b.x += b.speed);
+      robotBullets.forEach(b => b.x -= b.speed);
+      checkPlayerHit();
+
+      bullets.forEach((b, bi) => {
+        robots.forEach((r, ri) => {
+          if (
+            b.x < r.x + r.width &&
+            b.x + 5 > r.x &&
+            b.y < r.y + r.height &&
+            b.y + 5 > r.y
+          ) {
+            bullets.splice(bi, 1);
+            r.hitsToDie--;
+            if (r.hitsToDie <= 0) {
+              robots.splice(ri, 1);
+              kills++;
+              if (kills === 10) level = 2;
+            }
+          }
+        });
+      });
+
+      bullets = bullets.filter(b => b.x < canvas.width);
+      robotBullets = robotBullets.filter(b => b.x > 0);
+      robots = robots.filter(r => r.x + r.width > 0);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(imgBackground, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(imgSoldier, player.x, player.y, player.width, player.height);
+      ctx.drawImage(flagPlayer, player.x + 35, player.y - 30, 30, 20);
+
+      robots.forEach(r => {
+        ctx.drawImage(imgRobot, r.x, r.y, r.width, r.height);
+        ctx.drawImage(flagEnemy, r.x + 35, r.y - 30, 30, 20);
+      });
+
+      ctx.fillStyle = "yellow";
+      bullets.forEach(b => ctx.fillRect(b.x, b.y, 5, 5));
+      ctx.fillStyle = "red";
+      robotBullets.forEach(b => ctx.fillRect(b.x, b.y, 5, 5));
+
+      ctx.fillStyle = "white";
+      ctx.font = "16px Arial";
+      ctx.fillText("חיים: " + player.health, 10, 20);
+      ctx.fillText("הרגות: " + kills, 10, 40);
+      ctx.fillText("שלב: " + level, 10, 60);
+
+      if (player.health <= 0) {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "red";
+        ctx.font = "40px Arial";
+        ctx.fillText("Game Over", canvas.width / 2 - 100, canvas.height / 2);
+      }
+    }
+
+    function loop() {
+      if (player.health > 0) {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+      } else {
+        draw();
+      }
+    }
+
+    setInterval(spawnRobot, 2000);
+    loop();
+  });
+}
 </script>
 </body>
 </html>
