@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <title>משחק עם שתי מדינות</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+    }
+    #startScreen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('img/background.jpg') center/cover no-repeat;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    select, button {
+      padding: 10px;
+      font-size: 18px;
+      margin: 10px;
+    }
+    canvas {
+      display: block;
+      margin: auto;
+      border: 2px solid #444;
+    }
+  </style>
+</head>
+<body>
+<div id="startScreen">
+  <h1>בחר מדינה לשחקן וליריב</h1>
+  <label>המדינה שלך:</label>
+  <select id="playerCountry">
+    <option value="israel">ישראל</option>
+    <option value="usa">ארה"ב</option>
+    <option value="iran">איראן</option>
+    <option value="hamas">חמאס</option>
+    <option value="hezbollah">חיזבאללה</option>
+  </select>
+  <label>מדינת היריב:</label>
+  <select id="enemyCountry">
+    <option value="iran">איראן</option>
+    <option value="hezbollah">חיזבאללה</option>
+    <option value="hamas">חמאס</option>
+    <option value="usa">ארה"ב</option>
+    <option value="israel">ישראל</option>
+  </select>
+  <button id="startButton" type="button">התחל משחק</button>
+</div>
+
+<canvas id="game" width="800" height="400" style="display:none;"></canvas>
+
+<script>
+// Placeholder for the full JavaScript (was in previous message)
+document.getElementById("startButton").onclick = () => {
+  alert("כאן יופעל המשחק המלא עם כל הקוד שהזנת");
+};
+</script>
+</body>
+</html>
